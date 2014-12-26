@@ -1,24 +1,37 @@
-TARGET  = twiboot
-TARGET2 = mpmboot
+TARGETS=twiboot mpmboot
+TARGET_DIR=~/bin
+BUILD_DIR = build
 
-CFLAGS = -Wall -Wno-unused-result -O2 -MMD -MP -MF $(*F).d
+CFLAGS= -pipe -O2 -Wall -Wno-unused-result
+CFLAGS+= -MMD -MP -MF $(BUILD_DIR)/$(*D)/$(*F).d
+LDFLAGS=
 
 # ------
 
-SRC := $(wildcard *.c)
+SRC:= $(wildcard *.c)
 
-all: $(TARGET)
+all: $(TARGETS)
 
-$(TARGET): $(SRC:.c=.o)
+$(TARGETS): $(patsubst %,$(BUILD_DIR)/%, $(SRC:.c=.o))
 	@echo " Linking file:  $@"
 	@$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) > /dev/null
-	@ln -sf $@ $(TARGET2)
 
-%.o: %.c
+$(BUILD_DIR)/%.o: %.c $(MAKEFILE_LIST)
 	@echo " Building file: $<"
-	@$(CC) -c $(CFLAGS) $< -o $@
+	@$(shell test -d $(BUILD_DIR)/$(*D) || mkdir -p $(BUILD_DIR)/$(*D))
+	@$(CC) $(CFLAGS) -o $@ -c $<
 
 clean:
-	rm -rf $(TARGET) $(TARGET2) *.o *.d
+	rm -rf $(BUILD_DIR) $(TARGETS)
 
--include $(shell find . -name \*.d 2> /dev/null)
+install: $(TARGETS)
+	@mkdir -p $(TARGET_DIR)
+	rm -f $(patsubst %,$(TARGET_DIR)/%, $(TARGETS))
+	cp -a $^ $(TARGET_DIR)
+
+install_links: $(TARGETS)
+	@mkdir -p $(TARGET_DIR)
+	rm -f $(patsubst %,$(TARGET_DIR)/%, $(TARGETS))
+	ln -s -t $(TARGET_DIR) $(patsubst %,$(PWD)/%, $(TARGETS))
+
+-include $(shell find $(BUILD_DIR) -name \*.d 2> /dev/null)
