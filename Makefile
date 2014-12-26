@@ -1,4 +1,4 @@
-TARGETS=twiboot mpmboot
+TARGETS=twiboot mpmboot funkboot
 TARGET_DIR=~/bin
 BUILD_DIR = build
 

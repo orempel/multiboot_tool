@@ -29,5 +29,6 @@ struct multiboot_ops {
 
 extern struct multiboot_ops twi_ops;
 extern struct multiboot_ops mpm_ops;
+extern struct multiboot_ops funk_ops;
 
 #endif /* _MULTIBOOT_H_ */
