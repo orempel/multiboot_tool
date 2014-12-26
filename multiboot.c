@@ -33,6 +33,17 @@
 #define ACTION_READ     0x01
 #define ACTION_WRITE    0x02
 
+struct prog_mode {
+    char *progname;
+    struct multiboot_ops *ops;
+};
+
+static struct prog_mode prog_modes[] =
+{
+    { "twiboot", &twi_ops },
+    { "mpmboot", &mpm_ops },
+};
+
 struct mboot_action {
     struct list_head list;
 
@@ -203,22 +214,28 @@ static int main_optarg_cb(int val, const char *arg, void *privdata)
 
 int main(int argc, char *argv[])
 {
-    struct multiboot *mboot;
+    struct multiboot *mboot = NULL;
 
     char *progname = strrchr(argv[0], '/');
     progname = (progname != NULL) ? (progname +1) : argv[0];
 
-    if (strcmp(progname, "twiboot") == 0) {
-        mboot = twi_ops.alloc();
-    } else if (strcmp(progname, "mpmboot") == 0) {
-        mboot = mpm_ops.alloc();
-    } else {
-        fprintf(stderr, "invalid progname, use 'twiboot' or 'mpmboot'\n");
-        return -1;
+    int i;
+    for (i = 0; i < ARRAY_SIZE(prog_modes); i++) {
+        struct prog_mode *mode = &prog_modes[i];
+
+        if (strcmp(progname, mode->progname) == 0) {
+            mboot = mode->ops->alloc();
+            if (mboot == NULL) {
+                fprintf(stderr, "failed to allocate '%s'\n", progname);
+                return -1;
+            }
+        }
     }
 
-    if (mboot == NULL)
+    if (mboot == NULL) {
+        fprintf(stderr, "invalid progname\n");
         return -1;
+    }
 
     mboot->verify      = 1;
     mboot->progress_cb = progress_mode1_cb;
