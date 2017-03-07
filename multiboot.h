@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include "filedata.h"
 
-struct multiboot {
+struct multiboot
+{
     struct multiboot_ops *ops;
     void *privdata;
 
@@ -12,7 +13,8 @@ struct multiboot {
     void (* progress_cb)(const char *msg, int pos, int max);
 };
 
-struct multiboot_ops {
+struct multiboot_ops
+{
     struct multiboot * (* alloc)(void);
     void (* free)(struct multiboot *mboot);
 

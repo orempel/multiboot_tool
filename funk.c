@@ -124,7 +124,8 @@ struct rfm12_pkt
 
 struct multiboot_ops funk_ops;
 
-struct funk_privdata {
+struct funk_privdata
+{
     char *device;
     int fd;
     int connected;
@@ -141,30 +142,35 @@ struct funk_privdata {
 };
 
 
-static struct option funk_optargs[] = {
-    {"address",     1, 0, 'a'}, /* -a <addr>            */
-    {"device",      1, 0, 'd'}, /* [ -d <device> ]      */
+static struct option funk_optargs[] =
+{
+    { "address",    1, 0, 'a'}, /* -a <addr>            */
+    { "device",     1, 0, 'd'}, /* [ -d <device> ]      */
 };
 
 
+/* *************************************************************************
+ * funk_optarg_cb
+ * ************************************************************************* */
 static int funk_optarg_cb(int val, const char *arg, void *privdata)
 {
     struct funk_privdata *funk = (struct funk_privdata *)privdata;
 
-    switch (val) {
-    case 'a': /* address */
-        {
-            char *endptr;
-            funk->address = strtol(arg, &endptr, 16);
-            if (*endptr != '\0' || funk->address < 0x00 || funk->address > 0xFF) {
-                fprintf(stderr, "invalid address: '%s'\n", arg);
-                return -1;
-            }
-        }
-        break;
+    switch (val)
+    {
+        case 'a': /* address */
+            {
+                char *endptr;
 
-    case 'd': /* device */
-        {
+                funk->address = strtol(arg, &endptr, 16);
+                if (*endptr != '\0' || funk->address < 0x00 || funk->address > 0xFF) {
+                    fprintf(stderr, "invalid address: '%s'\n", arg);
+                    return -1;
+                }
+            }
+            break;
+
+        case 'd': /* device */
             if (funk->device != NULL) {
                 fprintf(stderr, "invalid device: '%s'\n", optarg);
                 return -1;
@@ -175,11 +181,10 @@ static int funk_optarg_cb(int val, const char *arg, void *privdata)
                 perror("strdup()");
                 return -1;
             }
-        }
-        break;
+            break;
 
-    case 'h':
-    case '?': /* error */
+        case 'h':
+        case '?': /* error */
             fprintf(stderr, "Usage: funkboot [options]\n"
                 "  -a <address>                 - selects rfm12 address (0x00 - 0xFF)\n"
                 "  -d <device>                  - selects funkbridge device\n"
@@ -192,25 +197,31 @@ static int funk_optarg_cb(int val, const char *arg, void *privdata)
                 "\n");
             return -1;
 
-    default:
-        return 1;
+        default:
+            return 1;
     }
 
     return 0;
 } /* funk_optarg_cb */
 
 
+/* *************************************************************************
+ * funk_alloc
+ * ************************************************************************* */
 static struct multiboot * funk_alloc(void)
 {
     struct multiboot * mboot = malloc(sizeof(struct multiboot));
     if (mboot == NULL)
+    {
         return NULL;
+    }
 
     memset(mboot, 0x00, sizeof(struct multiboot));
     mboot->ops = &funk_ops;
 
     struct funk_privdata *funk = malloc(sizeof(struct funk_privdata));
-    if (funk == NULL) {
+    if (funk == NULL)
+    {
         free(mboot);
         return NULL;
     }
@@ -226,55 +237,78 @@ static struct multiboot * funk_alloc(void)
 } /* funk_alloc */
 
 
+/* *************************************************************************
+ * funk_free
+ * ************************************************************************* */
 static void funk_free(struct multiboot *mboot)
 {
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
 
     if (funk->device != NULL)
+    {
         free(funk->device);
+    }
 
     free(funk);
     free(mboot);
 } /* funk_free */
 
 
-static int funk_get_memtype(struct multiboot *mboot, const char *memname)
+/* *************************************************************************
+ * optarg_copy
+ * ************************************************************************* */
+static int funk_get_memtype(struct multiboot *mboot,
+                            const char *memname)
 {
     if (strcmp(memname, "flash") == 0)
+    {
         return MEMTYPE_FLASH;
-
+    }
     else if (strcmp(memname, "eeprom") == 0)
+    {
         return MEMTYPE_EEPROM;
+    }
 
     return -1;
 } /* funk_get_memtype */
 
 
-static int funk_get_memsize(struct multiboot *mboot, int memtype)
+/* *************************************************************************
+ * optarg_copy
+ * ************************************************************************* */
+static int funk_get_memsize(struct multiboot *mboot,
+                            int memtype)
 {
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
 
     if (!funk->connected)
+    {
         return 0;
+    }
 
-    switch (memtype) {
-    case MEMTYPE_FLASH:
-        return funk->flashsize;
+    switch (memtype)
+    {
+        case MEMTYPE_FLASH:
+            return funk->flashsize;
 
-    case MEMTYPE_EEPROM:
-        return funk->eepromsize;
+        case MEMTYPE_EEPROM:
+            return funk->eepromsize;
 
-    default:
-        return 0;
+        default:
+            return 0;
     }
 } /* funk_get_memsize */
 
 
+/* *************************************************************************
+ * funk_serial_read
+ * ************************************************************************* */
 static int funk_serial_read(int fd, void *data, int size)
 {
     int pos = 0;
 
-    while (1) {
+    while (1)
+    {
         fd_set fdset;
         struct timeval timeout = { .tv_sec = 1, .tv_usec = 0 };
 
@@ -282,21 +316,29 @@ static int funk_serial_read(int fd, void *data, int size)
         FD_SET(fd, &fdset);
 
         int ret = select(fd +1, &fdset, NULL, NULL, &timeout);
-        if (ret == -1) {
+        if (ret == -1)
+        {
             perror("select");
             return -1;
 
-        } else if (ret == 0) {
+        }
+        else if (ret == 0)
+        {
             break;
-
-        } else if (FD_ISSET(fd, &fdset)) {
+        }
+        else if (FD_ISSET(fd, &fdset))
+        {
             int len = read(fd, data + pos, size - pos);
-            if (len < 0) {
+            if (len < 0)
+            {
                 return -1;
 
-            } else {
+            }
+            else
+            {
                 pos += len;
-                if (pos == size) {
+                if (pos == size)
+                {
                     break;
                 }
             }
@@ -308,31 +350,48 @@ static int funk_serial_read(int fd, void *data, int size)
 
 
 #if (FUNK_BRIDGE_DEBUG == 1) || (FUNK_PACKET_DEBUG == 1)
+/* *************************************************************************
+ * funk_print_data
+ * ************************************************************************* */
 static char * funk_print_data(uint8_t *data, uint16_t length)
 {
     int pos = 0, i = 0, j;
     char *buf = malloc(length * 4 + 64);
 
-    while (pos < length) {
+    while (pos < length)
+    {
         i += sprintf(buf + i, "%04X: ", pos);
-        for (j = 0; j < 16; j++) {
+        for (j = 0; j < 16; j++)
+        {
             if (pos + j < length)
+            {
                 i += sprintf(buf + i, "%02X", data[pos + j]);
+            }
             else
+            {
                 i += sprintf(buf + i, "  ");
+                if (j % 2)
+                {
+                    buf[i++] = ' ';
+                }
+            }
 
-            if (j % 2)
-                buf[i++] = ' ';
-        }
-
-        for (j = 0; j < 16; j++) {
-            if (pos + j < length) {
+        for (j = 0; j < 16; j++)
+        {
+            if (pos + j < length)
+            {
                 unsigned char val = data[pos + j];
                 if (val >= 0x20 && val < 0x80)
+                {
                     buf[i++] = val;
+                }
                 else
+                {
                     buf[i++] = '.';
-            } else {
+                }
+            }
+            else
+            {
                 buf[i++] = ' ';
             }
         }
@@ -348,16 +407,27 @@ static char * funk_print_data(uint8_t *data, uint16_t length)
 #endif
 
 
-static int funk_bridge_send(struct funk_privdata *funk, uint8_t *header, uint8_t headerlength, uint8_t *data, uint8_t datalength)
+/* *************************************************************************
+ * funk_bridge_send
+ * ************************************************************************* */
+static int funk_bridge_send(struct funk_privdata *funk,
+                            uint8_t *header,
+                            uint8_t headerlength,
+                            uint8_t *data,
+                            uint8_t datalength)
 {
-    if (headerlength > 0) {
-        if (write(funk->fd, header, headerlength) != headerlength) {
+    if (headerlength > 0)
+    {
+        if (write(funk->fd, header, headerlength) != headerlength)
+        {
             return -1;
         }
     }
 
-    if (datalength > 0) {
-        if (write(funk->fd, data, datalength) != datalength) {
+    if (datalength > 0)
+    {
+        if (write(funk->fd, data, datalength) != datalength)
+        {
             return -1;
         }
     }
@@ -372,7 +442,14 @@ static int funk_bridge_send(struct funk_privdata *funk, uint8_t *header, uint8_t
 } /* funk_bridge_send */
 
 
-static int funk_bridge_recv(struct funk_privdata *funk, uint8_t command, uint8_t *cause, uint8_t *buffer, int buffersize)
+/* *************************************************************************
+ * funk_bridge_recv
+ * ************************************************************************* */
+static int funk_bridge_recv(struct funk_privdata *funk,
+                            uint8_t command,
+                            uint8_t *cause,
+                            uint8_t *buffer,
+                            int buffersize)
 {
     uint8_t response[3];
     int len;
@@ -384,45 +461,63 @@ static int funk_bridge_recv(struct funk_privdata *funk, uint8_t command, uint8_t
         return -1;
     }
 
-    if (response[0] != command) {
-        fprintf(stderr, "invalid command response (0x%02x != 0x%02x)\n", response[0], command);
+    if (response[0] != command)
+    {
+        fprintf(stderr, "invalid command response (0x%02x != 0x%02x)\n",
+                response[0], command);
+
         return -1;
     }
 
     *cause = response[1];
     uint16_t length = response[2];
     uint16_t bufferpos = 0;
-    while (length > 0) {
+
+    while (length > 0)
+    {
 
         /* free space in output buffer? */
-        if ((bufferpos < buffersize) && (buffer != NULL)) {
-
+        if ((bufferpos < buffersize) && (buffer != NULL))
+        {
             uint16_t size = MIN(buffersize - bufferpos, length);
+
             len = funk_serial_read(funk->fd, buffer + bufferpos, size);
-            if (len <= 0) {
-                fprintf(stderr, "short read() from device (%d != %d)\n", len, size);
+            if (len <= 0)
+            {
+                fprintf(stderr, "short read() from device (%d != %d)\n",
+                        len, size);
+
                 return -1;
             }
+
             bufferpos += len;
             length    -= len;
-
-        } else {
+        }
+        else
+        {
             uint8_t dummy[256];
 
             /* no space in output buffer, but device still sends data -> do dummy read */
             uint16_t size = MIN(sizeof(dummy), length);
+
             len = funk_serial_read(funk->fd, dummy, size);
-            if (len <= 0) {
-                fprintf(stderr, "short read() from device (%d != %d)\n", len, size);
+            if (len <= 0)
+            {
+                fprintf(stderr, "short read() from device (%d != %d)\n",
+                        len, size);
+
                 return -1;
             }
+
             length -= len;
         }
     }
 
 #if (FUNK_BRIDGE_DEBUG == 1)
     char *dump = funk_print_data(buffer, bufferpos);
-    printf("funk_bridge_recv() cmd=0x%02x cause=0x%02x length=0x%02x\n%s\n", command, *cause, length, dump);
+    printf("funk_bridge_recv() cmd=0x%02x cause=0x%02x length=0x%02x\n%s\n",
+           command, *cause, length, dump);
+
     free(dump);
 #endif
 
@@ -430,22 +525,33 @@ static int funk_bridge_recv(struct funk_privdata *funk, uint8_t command, uint8_t
 } /* funk_bridge_recv */
 
 
-static int funk_send_packet(struct funk_privdata *funk, struct rfm12_pkt *pkt, int length)
+/* *************************************************************************
+ * funk_send_packet
+ * ************************************************************************* */
+static int funk_send_packet(struct funk_privdata *funk,
+                            struct rfm12_pkt *pkt,
+                            int length)
 {
     uint8_t request[] = { BRIDGE_CMD_TRANSMIT, length };
 
     int ret = funk_bridge_send(funk, request, sizeof(request), (uint8_t *)pkt, length);
     if (ret < 0)
+    {
         return ret;
+    }
 
     uint8_t cause = BRIDGE_CAUSE_SUCCESS;
     ret = funk_bridge_recv(funk, request[0], &cause, NULL, 0);
     if (ret != 0)
+    {
         return -1;
+    }
 
 #if (FUNK_PACKET_DEBUG == 1)
     char *dump = funk_print_data((uint8_t *)pkt, length);
-    printf("funk_send_packet() cause=0x%02x length=0x%02x\n%s\n", cause, length, dump);
+    printf("funk_send_packet() cause=0x%02x length=0x%02x\n%s\n",
+           cause, length, dump);
+
     free(dump);
 #endif
 
@@ -453,18 +559,27 @@ static int funk_send_packet(struct funk_privdata *funk, struct rfm12_pkt *pkt, i
 } /* funk_send_packet */
 
 
-static int funk_recv_packet(struct funk_privdata *funk, struct rfm12_pkt *pkt, int *length)
+/* *************************************************************************
+ * funk_recv_packet
+ * ************************************************************************* */
+static int funk_recv_packet(struct funk_privdata *funk,
+                            struct rfm12_pkt *pkt,
+                            int *length)
 {
     uint8_t request[] = { BRIDGE_CMD_RECEIVE, 0 };
 
     int ret = funk_bridge_send(funk, request, sizeof(request), NULL, 0);
     if (ret < 0)
+    {
         return ret;
+    }
 
     uint8_t cause = BRIDGE_CAUSE_SUCCESS;
     ret = funk_bridge_recv(funk, request[0], &cause, (uint8_t *)pkt, *length);
     if (ret < 0)
+    {
         return -1;
+    }
 
     *length = ret;
 
@@ -478,18 +593,27 @@ static int funk_recv_packet(struct funk_privdata *funk, struct rfm12_pkt *pkt, i
 } /* funk_recv_packet */
 
 
-static int funk_bridge_version(struct funk_privdata *funk, uint8_t *version, int size)
+/* *************************************************************************
+ * funk_bridge_version
+ * ************************************************************************* */
+static int funk_bridge_version(struct funk_privdata *funk,
+                               uint8_t *version,
+                               int size)
 {
     uint8_t request[] = { BRIDGE_CMD_VERSION, 0 };
 
     int ret = funk_bridge_send(funk, request, sizeof(request), NULL, 0);
     if (ret < 0)
+    {
         return ret;
+    }
 
     uint8_t cause = BRIDGE_CAUSE_SUCCESS;
     ret = funk_bridge_recv(funk, request[0], &cause, version, size);
     if (ret < 0)
+    {
         return ret;
+    }
 
     version[ret] = '\0';
 
@@ -497,6 +621,9 @@ static int funk_bridge_version(struct funk_privdata *funk, uint8_t *version, int
 } /* funk_bridge_version */
 
 
+/* *************************************************************************
+ * funk_close_device
+ * ************************************************************************* */
 static void funk_close_device(struct funk_privdata *funk)
 {
     /* delay close() / tcsetattr() */
@@ -507,15 +634,20 @@ static void funk_close_device(struct funk_privdata *funk)
 } /* funk_close_device */
 
 
+/* *************************************************************************
+ * funk_open_device
+ * ************************************************************************* */
 static int funk_open_device(struct funk_privdata *funk)
 {
     funk->fd = open(funk->device, O_RDWR | O_NOCTTY | O_CLOEXEC);
-    if (funk->fd < 0) {
+    if (funk->fd < 0)
+    {
         perror("open()");
         return -1;
     }
 
-    if (tcgetattr(funk->fd, &funk->oldtio) < 0) {
+    if (tcgetattr(funk->fd, &funk->oldtio) < 0)
+    {
         perror("tcgetattr(oldtio)");
         close(funk->fd);
         return -1;
@@ -531,7 +663,8 @@ static int funk_open_device(struct funk_privdata *funk)
     newtio.c_cc[VTIME] = 0;
 
     int err = tcsetattr(funk->fd, TCSANOW, &newtio);
-    if (err < 0) {
+    if (err < 0)
+    {
         perror("tcsetattr(newtio)");
         close(funk->fd);
         return -1;
@@ -542,7 +675,11 @@ static int funk_open_device(struct funk_privdata *funk)
 } /* funk_open_device */
 
 
-static int funk_switch_application(struct funk_privdata *funk, uint8_t application)
+/* *************************************************************************
+ * funk_switch_application
+ * ************************************************************************* */
+static int funk_switch_application(struct funk_privdata *funk,
+                                   uint8_t application)
 {
     struct rfm12_pkt packet;
 
@@ -556,14 +693,16 @@ static int funk_switch_application(struct funk_privdata *funk, uint8_t applicati
     packet.msg.p.switchapp.app  = application;
 
     int ret = funk_send_packet(funk, &packet, 4 + packet.data_length);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         fprintf(stderr, "funk_switch_application(): funk_send_packet()\n");
         return ret;
     }
 
     int response_size = sizeof(packet);
     ret = funk_recv_packet(funk, &packet, &response_size);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         fprintf(stderr, "funk_switch_application(): funk_recv_packet()\n");
         return ret;
     }
@@ -579,7 +718,12 @@ static int funk_switch_application(struct funk_privdata *funk, uint8_t applicati
 } /* funk_switch_application */
 
 
-static int funk_read_version(struct funk_privdata *funk, uint8_t *version, uint16_t length)
+/* *************************************************************************
+ * funk_read_version
+ * ************************************************************************* */
+static int funk_read_version(struct funk_privdata *funk,
+                             uint8_t *version,
+                             uint16_t length)
 {
     struct rfm12_pkt packet;
 
@@ -592,14 +736,16 @@ static int funk_read_version(struct funk_privdata *funk, uint8_t *version, uint1
     packet.msg.cause            = CAUSE_SUCCESS;
 
     int ret = funk_send_packet(funk, &packet, 4 + packet.data_length);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         fprintf(stderr, "funk_read_version(): funk_send_packet()\n");
         return ret;
     }
 
     int response_size = sizeof(packet);
     ret = funk_recv_packet(funk, &packet, &response_size);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         fprintf(stderr, "funk_read_version(): funk_recv_packet()\n");
         return ret;
     }
@@ -613,7 +759,9 @@ static int funk_read_version(struct funk_privdata *funk, uint8_t *version, uint1
 
     int i;
     for (i = 0; i < packet.data_length -3; i++)
+    {
         version[i] = packet.msg.p.version.data[i] & 0x7F;
+    }
 
     version[i] = '\0';
 
@@ -621,7 +769,12 @@ static int funk_read_version(struct funk_privdata *funk, uint8_t *version, uint1
 } /* funk_read_version */
 
 
-static int funk_read_chipinfo(struct funk_privdata *funk, uint8_t *chipinfo, uint16_t length)
+/* *************************************************************************
+ * funk_read_chipinfo
+ * ************************************************************************* */
+static int funk_read_chipinfo(struct funk_privdata *funk,
+                              uint8_t *chipinfo,
+                              uint16_t length)
 {
     struct rfm12_pkt packet;
 
@@ -634,7 +787,8 @@ static int funk_read_chipinfo(struct funk_privdata *funk, uint8_t *chipinfo, uin
     packet.msg.cause            = CAUSE_SUCCESS;
 
     int ret = funk_send_packet(funk, &packet, 4 + packet.data_length);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         fprintf(stderr, "funk_read_chipinfo(): funk_send_packet()\n");
         return ret;
     }
@@ -659,7 +813,14 @@ static int funk_read_chipinfo(struct funk_privdata *funk, uint8_t *chipinfo, uin
 } /* funk_read_chipinfo */
 
 
-static int funk_read_memory(struct funk_privdata *funk, uint8_t *buffer, uint16_t size, uint8_t memtype, uint16_t address)
+/* *************************************************************************
+ * funk_read_memory
+ * ************************************************************************* */
+static int funk_read_memory(struct funk_privdata *funk,
+                            uint8_t *buffer,
+                            uint16_t size,
+                            uint8_t memtype,
+                            uint16_t address)
 {
     struct rfm12_pkt packet;
 
@@ -700,7 +861,14 @@ static int funk_read_memory(struct funk_privdata *funk, uint8_t *buffer, uint16_
 } /* funk_read_memory */
 
 
-static int __funk_write_memory(struct funk_privdata *funk, uint8_t *buffer, uint16_t size, uint8_t memtype, uint16_t address)
+/* *************************************************************************
+ * __funk_write_memory
+ * ************************************************************************* */
+static int __funk_write_memory(struct funk_privdata *funk,
+                               uint8_t *buffer,
+                               uint16_t size,
+                               uint8_t memtype,
+                               uint16_t address)
 {
     struct rfm12_pkt packet;
 
@@ -718,14 +886,16 @@ static int __funk_write_memory(struct funk_privdata *funk, uint8_t *buffer, uint
     memcpy(packet.msg.p.write_req.data, buffer, size);
 
     int ret = funk_send_packet(funk, &packet, 4 + packet.data_length);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         fprintf(stderr, "funk_write_memory(): funk_send_packet()\n");
         return ret;
     }
 
     int response_size = sizeof(packet);
     ret = funk_recv_packet(funk, &packet, &response_size);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         fprintf(stderr, "funk_write_memory(): funk_recv_packet()\n");
         return ret;
     }
@@ -741,7 +911,14 @@ static int __funk_write_memory(struct funk_privdata *funk, uint8_t *buffer, uint
 } /* __funk_write_memory */
 
 
-static int funk_write_memory(struct funk_privdata *funk, uint8_t *buffer, uint16_t size, uint8_t memtype, uint16_t address)
+/* *************************************************************************
+ * funk_write_memory
+ * ************************************************************************* */
+static int funk_write_memory(struct funk_privdata *funk,
+                             uint8_t *buffer,
+                             uint16_t size,
+                             uint8_t memtype,
+                             uint16_t address)
 {
     if (memtype == MEMTYPE_EEPROM)
     {
@@ -769,7 +946,9 @@ static int funk_write_memory(struct funk_privdata *funk, uint8_t *buffer, uint16
     {
         ret = __funk_write_memory(funk, &pagebuf[pos], WRITE_BLOCK_SIZE, memtype, address + pos);
         if (ret < 0)
+        {
             break;
+        }
     }
 
     free(pagebuf);
@@ -777,39 +956,52 @@ static int funk_write_memory(struct funk_privdata *funk, uint8_t *buffer, uint16
 } /* funk_write_memory */
 
 
+/* *************************************************************************
+ * funk_close
+ * ************************************************************************* */
 static int funk_close(struct multiboot *mboot)
 {
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
 
     if (funk->connected)
+    {
         funk_switch_application(funk, BOOTTYPE_APPLICATION);
+    }
 
     funk_close_device(funk);
     return 0;
 } /* funk_close */
 
 
+/* *************************************************************************
+ * funk_open
+ * ************************************************************************* */
 static int funk_open(struct multiboot *mboot)
 {
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
 
-    if (funk->address == 0) {
+    if (funk->address == 0)
+    {
         fprintf(stderr, "abort: no address given\n");
         return -1;
     }
 
-    if (funk->device == NULL) {
+    if (funk->device == NULL)
+    {
         fprintf(stderr, "abort: no device given\n");
         return -1;
     }
 
     if (funk_open_device(funk) < 0)
+    {
         return -1;
+    }
 
     printf("funkbridge dev : %-16s\n", funk->device);
 
     char bridge_version[20];
-    if (funk_bridge_version(funk, (uint8_t *)bridge_version, sizeof(bridge_version))) {
+    if (funk_bridge_version(funk, (uint8_t *)bridge_version, sizeof(bridge_version)))
+    {
         fprintf(stderr, "failed to get funkbridge version\n");
         funk_close(mboot);
         return -1;
@@ -817,7 +1009,8 @@ static int funk_open(struct multiboot *mboot)
 
     printf("funkbridge ver : %-16s\n", bridge_version);
 
-    if (funk_switch_application(funk, BOOTTYPE_BOOTLOADER)) {
+    if (funk_switch_application(funk, BOOTTYPE_BOOTLOADER))
+    {
         fprintf(stderr, "failed to switch to bootloader (invalid address?)\n");
         funk_close(mboot);
         return -1;
@@ -829,14 +1022,16 @@ static int funk_open(struct multiboot *mboot)
     usleep(100000);
 
     char version[20];
-    if (funk_read_version(funk, (uint8_t *)version, sizeof(version))) {
+    if (funk_read_version(funk, (uint8_t *)version, sizeof(version)))
+    {
         fprintf(stderr, "failed to get bootloader version\n");
         funk_close(mboot);
         return -1;
     }
 
     uint8_t chipinfo[8];
-    if (funk_read_chipinfo(funk, chipinfo, sizeof(chipinfo))) {
+    if (funk_read_chipinfo(funk, chipinfo, sizeof(chipinfo)))
+    {
         fprintf(stderr, "failed to get bootloader chipinfo\n");
         funk_close(mboot);
         return -1;
@@ -848,26 +1043,39 @@ static int funk_open(struct multiboot *mboot)
     funk->flashsize  = (chipinfo[4] << 8) + chipinfo[5];
     funk->eepromsize = (chipinfo[6] << 8) + chipinfo[7];
 
-    printf("version        : %-16s (sig: 0x%02x 0x%02x 0x%02x => %s)\n", version, chipinfo[0], chipinfo[1], chipinfo[2], chipname);
-    printf("flash size     : 0x%04x / %5d   (0x%02x bytes/page)\n", funk->flashsize, funk->flashsize, funk->flashpage);
-    printf("eeprom size    : 0x%04x / %5d\n", funk->eepromsize, funk->eepromsize);
+    printf("version        : %-16s (sig: 0x%02x 0x%02x 0x%02x => %s)\n",
+           version, chipinfo[0], chipinfo[1], chipinfo[2], chipname);
+
+    printf("flash size     : 0x%04x / %5d   (0x%02x bytes/page)\n",
+           funk->flashsize, funk->flashsize, funk->flashpage);
+
+    printf("eeprom size    : 0x%04x / %5d\n",
+           funk->eepromsize, funk->eepromsize);
 
     return 0;
 } /* funk_open */
 
 
-static int funk_read(struct multiboot *mboot, struct databuf *dbuf, int memtype)
+/* *************************************************************************
+ * funk_read
+ * ************************************************************************* */
+static int funk_read(struct multiboot *mboot,
+                     struct databuf *dbuf,
+                     int memtype)
 {
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "reading flash" : "reading eeprom";
 
     int pos = 0;
     int size = (memtype == MEMTYPE_FLASH) ? funk->flashsize : funk->eepromsize;
-    while (pos < size) {
+
+    while (pos < size)
+    {
         mboot->progress_cb(progress_msg, pos, size);
 
         int len = MIN(READ_BLOCK_SIZE, size - pos);
-        if (funk_read_memory(funk, dbuf->data + pos, len, memtype, pos)) {
+        if (funk_read_memory(funk, dbuf->data + pos, len, memtype, pos))
+        {
             mboot->progress_cb(progress_msg, -1, -1);
             return -1;
         }
@@ -882,19 +1090,27 @@ static int funk_read(struct multiboot *mboot, struct databuf *dbuf, int memtype)
 } /* funk_read */
 
 
-static int funk_write(struct multiboot *mboot, struct databuf *dbuf, int memtype)
+/* *************************************************************************
+ * funk_write
+ * ************************************************************************* */
+static int funk_write(struct multiboot *mboot,
+                      struct databuf *dbuf,
+                      int memtype)
 {
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "writing flash" : "writing eeprom";
 
     int pos = 0;
-    while (pos < dbuf->length) {
+    while (pos < dbuf->length)
+    {
         mboot->progress_cb(progress_msg, pos, dbuf->length);
 
         int len = (memtype == MEMTYPE_FLASH) ? funk->flashpage : WRITE_BLOCK_SIZE;
 
         len = MIN(len, dbuf->length - pos);
-        if (funk_write_memory(funk, dbuf->data + pos, len, memtype, pos)) {
+
+        if (funk_write_memory(funk, dbuf->data + pos, len, memtype, pos))
+        {
             mboot->progress_cb(progress_msg, -1, -1);
             return -1;
         }
@@ -907,23 +1123,32 @@ static int funk_write(struct multiboot *mboot, struct databuf *dbuf, int memtype
 } /* funk_write */
 
 
-static int funk_verify(struct multiboot *mboot, struct databuf *dbuf, int memtype)
+/* *************************************************************************
+ * funk_verify
+ * ************************************************************************* */
+static int funk_verify(struct multiboot *mboot,
+                       struct databuf *dbuf,
+                       int memtype)
 {
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "verifing flash" : "verifing eeprom";
 
     int pos = 0;
     uint8_t comp[READ_BLOCK_SIZE];
-    while (pos < dbuf->length) {
+
+    while (pos < dbuf->length)
+    {
         mboot->progress_cb(progress_msg, pos, dbuf->length);
 
         int len = MIN(READ_BLOCK_SIZE, dbuf->length - pos);
-        if (funk_read_memory(funk, comp, len, memtype, pos)) {
+        if (funk_read_memory(funk, comp, len, memtype, pos))
+        {
             mboot->progress_cb(progress_msg, -1, -1);
             return -1;
         }
 
-        if (memcmp(comp, dbuf->data + pos, len) != 0x00) {
+        if (memcmp(comp, dbuf->data + pos, len) != 0x00)
+        {
             mboot->progress_cb(progress_msg, -1, -1);
             fprintf(stderr, "verify failed at page 0x%04x!!\n", pos);
             return -1;
@@ -939,7 +1164,8 @@ static int funk_verify(struct multiboot *mboot, struct databuf *dbuf, int memtyp
 } /* funk_verify */
 
 
-struct multiboot_ops funk_ops = {
+struct multiboot_ops funk_ops =
+{
     .alloc          = funk_alloc,
     .free           = funk_free,
     .get_memtype    = funk_get_memtype,

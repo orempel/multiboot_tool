@@ -28,7 +28,8 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
 
-struct optarg_entry {
+struct optarg_entry
+{
     struct list_head list;
     const struct option *opts;
     int count;
@@ -39,6 +40,10 @@ struct optarg_entry {
 
 static LIST_HEAD(option_list);
 
+
+/* *************************************************************************
+ * optarg_register
+ * ************************************************************************* */
 int optarg_register(const struct option *opts, int count,
                     int (* parser_cb)(int val, const char *arg, void *privdata),
                     void *privdata)
@@ -47,7 +52,9 @@ int optarg_register(const struct option *opts, int count,
 
     entry = malloc(sizeof(struct optarg_entry));
     if (entry == NULL)
+    {
         return -1;
+    }
 
     entry->opts         = opts;     /* TODO: copy? */
     entry->count        = count;
@@ -56,18 +63,27 @@ int optarg_register(const struct option *opts, int count,
 
     list_add_tail(&entry->list, &option_list);
     return 0;
-}
+} /* optarg_register */
 
+
+/* *************************************************************************
+ * optarg_free
+ * ************************************************************************* */
 void optarg_free(void)
 {
     struct optarg_entry *entry, *entry_tmp;
 
-    list_for_each_entry_safe(entry, entry_tmp, &option_list, list) {
+    list_for_each_entry_safe(entry, entry_tmp, &option_list, list)
+    {
         list_del(&entry->list);
         free(entry);
     }
-}
+} /* optarg_free */
 
+
+/* *************************************************************************
+ * optarg_getsize
+ * ************************************************************************* */
 static void optarg_getsize(int *opt_count, int *optstring_len)
 {
     int count  = 0;
@@ -75,17 +91,21 @@ static void optarg_getsize(int *opt_count, int *optstring_len)
 
     struct optarg_entry *entry;
 
-    list_for_each_entry(entry, &option_list, list) {
+    list_for_each_entry(entry, &option_list, list)
+    {
         count += entry->count;
 
         int i;
-        for (i = 0; i < entry->count; i++) {
-            switch (entry->opts[i].has_arg) {
+        for (i = 0; i < entry->count; i++)
+        {
+            switch (entry->opts[i].has_arg)
+            {
                 case 0: /* no arguments */
                 case 1: /* has argument */
                 case 2: /* optional argument */
                     length += entry->opts[i].has_arg +1;
                     break;
+
                 default:
                     break;
             }
@@ -94,19 +114,26 @@ static void optarg_getsize(int *opt_count, int *optstring_len)
 
     *opt_count     = count  +1;
     *optstring_len = length +1;
-}
+} /* optarg_getsize */
 
+
+/* *************************************************************************
+ * optarg_copy
+ * ************************************************************************* */
 static void optarg_copy(struct option *opts, char *optstring)
 {
     struct optarg_entry *entry;
 
-    list_for_each_entry(entry, &option_list, list) {
+    list_for_each_entry(entry, &option_list, list)
+    {
         memcpy(opts, entry->opts, sizeof(struct option) * entry->count);
         opts += entry->count;
 
         int i;
-        for (i = 0; i < entry->count; i++) {
-            switch (entry->opts[i].has_arg) {
+        for (i = 0; i < entry->count; i++)
+        {
+            switch (entry->opts[i].has_arg)
+            {
                 case 0: /* no arguments */
                     *optstring++ = (char)entry->opts[i].val;
                     break;
@@ -130,8 +157,12 @@ static void optarg_copy(struct option *opts, char *optstring)
 
     memset(opts++, 0x00, sizeof(struct option));
     *optstring++ = '\0';
-}
+} /* optarg_copy */
 
+
+/* *************************************************************************
+ * optarg_parse
+ * ************************************************************************* */
 int optarg_parse(int argc, char * const argv[])
 {
     struct option *longopts;
@@ -143,10 +174,13 @@ int optarg_parse(int argc, char * const argv[])
 
     longopts = malloc(sizeof(struct option) * opt_count);
     if (longopts == NULL)
+    {
         return -1;
+    }
 
     optstring = malloc(optstring_len);
-    if (optstring == NULL) {
+    if (optstring == NULL)
+    {
         free(longopts);
         return -1;
     }
@@ -155,32 +189,44 @@ int optarg_parse(int argc, char * const argv[])
 
     int retval = 0;
     int val = 0;
-    while (val != -1 && retval == 0) {
+    while (val != -1 && retval == 0)
+    {
         opterr = 1; /* print error message to stderr */
         val = getopt_long(argc, argv, optstring, longopts, NULL);
 
-        if (val == 0x00) /* variable assigned (not supported) */
+        /* variable assigned (not supported) */
+        if (val == 0x00)
+        {
             continue;
+        }
 
         struct optarg_entry *entry;
-        list_for_each_entry(entry, &option_list, list) {
+        list_for_each_entry(entry, &option_list, list)
+        {
             int ret = entry->parser_cb(val, optarg, entry->privdata);
 
             /* option recognized, with error */
-            if (ret < 0) {
+            if (ret < 0)
+            {
                 retval = ret;
                 break;
-
+            }
             /* option recognized, no error */
-            } else if (ret == 0) {
+            else if (ret == 0)
+            {
                 break;
             }
         }
 
-        if (val == -1) /* parsing completed */
+        /* parsing completed */
+        if (val == -1)
+        {
             break;
+        }
 
-        if (val == '?') { /* parsing error */
+        /* parsing error */
+        if (val == '?')
+        {
             retval = 1;
             break;
         }
@@ -190,4 +236,4 @@ int optarg_parse(int argc, char * const argv[])
     free(longopts);
 
     return retval;
-}
+} /* optarg_parse */

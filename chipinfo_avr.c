@@ -27,26 +27,35 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
 
-struct chipinfo {
+struct chipinfo
+{
     uint8_t sig[3];
     const char name[16];
 };
 
-static struct chipinfo chips[] = {
+static struct chipinfo chips[] =
+{
     { { 0x1E, 0x93, 0x07 }, "AVR Mega 8" },
     { { 0x1E, 0x93, 0x0A }, "AVR Mega 88" },
     { { 0x1E, 0x94, 0x06 }, "AVR Mega 168" },
     { { 0x1E, 0x95, 0x02 }, "AVR Mega 32" },
 };
 
+/* *************************************************************************
+ * chipinfo_get_avr_name
+ * ************************************************************************* */
 const char * chipinfo_get_avr_name(const uint8_t *sig)
 {
     int i;
-    for (i = 0; i < ARRAY_SIZE(chips); i++) {
+
+    for (i = 0; i < ARRAY_SIZE(chips); i++)
+    {
         struct chipinfo *chip = &chips[i];
         if (chip->sig[0] == sig[0] && chip->sig[1] == sig[1] && chip->sig[2] == sig[2])
+        {
             return chip->name;
+        }
     }
 
     return "unknown";
-}
+} /* chipinfo_get_avr_name */
