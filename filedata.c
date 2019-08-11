@@ -64,7 +64,8 @@ void dbuf_free(struct databuf *dbuf)
  * ************************************************************************* */
 static void dbuf_dump(struct databuf *dbuf)
 {
-    int pos = 0, oldskip = 0;
+    uint32_t pos = 0;
+    int oldskip = 0;
 
     while (pos < dbuf->length)
     {
@@ -372,6 +373,9 @@ static int hexfile_putrecord(FILE *stream, struct ihex_record *record)
  * ************************************************************************* */
 static int hexfile_getsize(const char *filename, uint32_t *size)
 {
+    /* unused parameter */
+    (void)filename;
+
     *size = 0x10000;
     return 0;
 } /* hexfile_getsize */
@@ -432,9 +436,9 @@ static int hexfile_write(const char *filename, struct databuf *dbuf)
         return -1;
     }
 
-    int i;
-    int addr_min = dbuf->length;
-    int addr_max = 0;
+    uint32_t i;
+    uint32_t addr_min = dbuf->length;
+    uint32_t addr_max = 0;
     for (i = 0; i < dbuf->length; i++)
     {
         if (dbuf->data[i] == 0xFF)

@@ -46,7 +46,7 @@ static struct chipinfo chips[] =
  * ************************************************************************* */
 const char * chipinfo_get_avr_name(const uint8_t *sig)
 {
-    int i;
+    unsigned int i;
 
     for (i = 0; i < ARRAY_SIZE(chips); i++)
     {

@@ -1,8 +1,8 @@
-TARGETS=twiboot mpmboot funkboot
+TARGETS=twiboot mpmboot funkboot eprom_prog
 TARGET_DIR=~/bin
 BUILD_DIR = build
 
-CFLAGS= -pipe -O2 -Wall -Wno-unused-result
+CFLAGS= -pipe -O2 -Wall -Wextra -Wno-unused-result
 CFLAGS+= -MMD -MP -MF $(BUILD_DIR)/$(*D)/$(*F).d
 LDFLAGS=
 

@@ -15,6 +15,8 @@ struct multiboot
 
 struct multiboot_ops
 {
+    const char * exec_name;
+
     struct multiboot * (* alloc)(void);
     void (* free)(struct multiboot *mboot);
 
@@ -32,5 +34,6 @@ struct multiboot_ops
 extern struct multiboot_ops twi_ops;
 extern struct multiboot_ops mpm_ops;
 extern struct multiboot_ops funk_ops;
+extern struct multiboot_ops eprog_ops;
 
 #endif /* _MULTIBOOT_H_ */

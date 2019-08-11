@@ -360,14 +360,14 @@ static int twi_read(struct multiboot *mboot,
     struct twi_privdata *twi = (struct twi_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "reading flash" : "reading eeprom";
 
-    int pos = 0;
-    int size = (memtype == MEMTYPE_FLASH) ? twi->flashsize : twi->eepromsize;
+    uint16_t pos = 0;
+    uint16_t size = (memtype == MEMTYPE_FLASH) ? twi->flashsize : twi->eepromsize;
 
     while (pos < size)
     {
         mboot->progress_cb(progress_msg, pos, size);
 
-        int len = MIN(READ_BLOCK_SIZE, size - pos);
+        uint8_t len = MIN(READ_BLOCK_SIZE, size - pos);
 
         if (twi_read_memory(twi, dbuf->data + pos, len, memtype, pos))
         {
@@ -395,12 +395,12 @@ static int twi_write(struct multiboot *mboot,
     struct twi_privdata *twi = (struct twi_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "writing flash" : "writing eeprom";
 
-    int pos = 0;
+    uint16_t pos = 0;
     while (pos < dbuf->length)
     {
         mboot->progress_cb(progress_msg, pos, dbuf->length);
 
-        int len = (memtype == MEMTYPE_FLASH) ? twi->pagesize : WRITE_BLOCK_SIZE;
+        uint8_t len = (memtype == MEMTYPE_FLASH) ? twi->pagesize : WRITE_BLOCK_SIZE;
 
         len = MIN(len, dbuf->length - pos);
 
@@ -426,7 +426,7 @@ static int twi_verify(struct multiboot *mboot, struct databuf *dbuf, int memtype
     struct twi_privdata *twi = (struct twi_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "verifing flash" : "verifing eeprom";
 
-    int pos = 0;
+    uint16_t pos = 0;
     uint8_t comp[READ_BLOCK_SIZE];
 
     while (pos < dbuf->length)
@@ -571,6 +571,9 @@ static void twi_free(struct multiboot *mboot)
 static int twi_get_memtype(struct multiboot *mboot,
                            const char *memname)
 {
+    /* unused parameter */
+    (void)mboot;
+
     if (strcmp(memname, "flash") == 0)
     {
         return MEMTYPE_FLASH;
@@ -613,6 +616,7 @@ static int twi_get_memsize(struct multiboot *mboot,
 
 struct multiboot_ops twi_ops =
 {
+    .exec_name      = "twiboot",
     .alloc          = twi_alloc,
     .free           = twi_free,
     .get_memtype    = twi_get_memtype,

@@ -46,11 +46,11 @@ struct mpm_privdata
     int fd;
     int connected;
 
-    int address;
+    uint8_t address;
 
-    int flashsize;
-    int flashpage;
-    int eepromsize;
+    uint16_t flashsize;
+    uint8_t flashpage;
+    uint16_t eepromsize;
 
     struct termios oldtio;
 };
@@ -178,6 +178,9 @@ static void mpm_free(struct multiboot *mboot)
 static int mpm_get_memtype(struct multiboot *mboot,
                            const char *memname)
 {
+    /* unused parameter */
+    (void)mboot;
+
     if (strcmp(memname, "flash") == 0)
     {
         return MEMTYPE_FLASH;
@@ -221,7 +224,7 @@ static int mpm_get_memsize(struct multiboot *mboot, int memtype)
  * mpm_send
  * ************************************************************************* */
 static int mpm_send(struct mpm_privdata *mpm, uint8_t command,
-                    uint8_t *data, int length)
+                    uint8_t *data, uint16_t length)
 {
     struct termios tio;
 
@@ -283,9 +286,9 @@ static int mpm_send(struct mpm_privdata *mpm, uint8_t command,
 
 
 /* *************************************************************************
- * myread
+ * mpm_serial_read
  * ************************************************************************* */
-static int myread(int fd, void *data, int size)
+static int mpm_serial_read(int fd, void *data, int size)
 {
     int pos = 0;
 
@@ -327,7 +330,7 @@ static int myread(int fd, void *data, int size)
     }
 
     return pos;
-} /* myread */
+} /* mpm_serial_read */
 
 
 /* *************************************************************************
@@ -342,7 +345,7 @@ static int mpm_recv(struct mpm_privdata *mpm,
     int     len;
     uint8_t header[4];
 
-    len = myread(mpm->fd, header, sizeof(header));
+    len = mpm_serial_read(mpm->fd, header, sizeof(header));
     if (len != sizeof(header))
     {
         fprintf(stderr, "short read() from device (not addressed?)\n");
@@ -367,10 +370,9 @@ static int mpm_recv(struct mpm_privdata *mpm,
         /* free space in output buffer? */
         if ((bufferpos < buffersize) && (buffer != NULL))
         {
-
             uint16_t size = MIN(buffersize - bufferpos, length);
 
-            len = myread(mpm->fd, buffer + bufferpos, size);
+            len = mpm_serial_read(mpm->fd, buffer + bufferpos, size);
             if (len <= 0)
             {
                 fprintf(stderr, "short read() from device (%d != %d)\n", len, size);
@@ -379,7 +381,6 @@ static int mpm_recv(struct mpm_privdata *mpm,
 
             bufferpos += len;
             length    -= len;
-
         }
         else
         {
@@ -388,7 +389,7 @@ static int mpm_recv(struct mpm_privdata *mpm,
             /* no space in output buffer, but device still sends data -> do dummy read */
             uint16_t size = MIN(sizeof(dummy), length);
 
-            len = myread(mpm->fd, dummy, size);
+            len = mpm_serial_read(mpm->fd, dummy, size);
             if (len <= 0)
             {
                 fprintf(stderr, "short read() from device (%d != %d)\n", len, size);
@@ -728,14 +729,14 @@ static int mpm_read(struct multiboot *mboot,
     struct mpm_privdata *mpm = (struct mpm_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "reading flash" : "reading eeprom";
 
-    int pos = 0;
-    int size = (memtype == MEMTYPE_FLASH) ? mpm->flashsize : mpm->eepromsize;
+    uint16_t pos = 0;
+    uint16_t size = (memtype == MEMTYPE_FLASH) ? mpm->flashsize : mpm->eepromsize;
 
     while (pos < size)
     {
         mboot->progress_cb(progress_msg, pos, size);
 
-        int len = MIN(READ_BLOCK_SIZE, size - pos);
+        uint16_t len = MIN(READ_BLOCK_SIZE, size - pos);
         if (mpm_read_memory(mpm, dbuf->data + pos, len, memtype, pos))
         {
             mboot->progress_cb(progress_msg, -1, -1);
@@ -761,12 +762,12 @@ static int mpm_write(struct multiboot *mboot,
     struct mpm_privdata *mpm = (struct mpm_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "writing flash" : "writing eeprom";
 
-    int pos = 0;
+    uint16_t pos = 0;
     while (pos < dbuf->length)
     {
         mboot->progress_cb(progress_msg, pos, dbuf->length);
 
-        int len = (memtype == MEMTYPE_FLASH) ? mpm->flashpage : WRITE_BLOCK_SIZE;
+        uint16_t len = (memtype == MEMTYPE_FLASH) ? mpm->flashpage : WRITE_BLOCK_SIZE;
 
         len = MIN(len, dbuf->length - pos);
         if (mpm_write_memory(mpm, dbuf->data + pos, len, memtype, pos))
@@ -792,14 +793,14 @@ static int mpm_verify(struct multiboot *mboot,
     struct mpm_privdata *mpm = (struct mpm_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "verifing flash" : "verifing eeprom";
 
-    int pos = 0;
+    uint16_t pos = 0;
     uint8_t comp[READ_BLOCK_SIZE];
 
     while (pos < dbuf->length)
     {
         mboot->progress_cb(progress_msg, pos, dbuf->length);
 
-        int len = MIN(READ_BLOCK_SIZE, dbuf->length - pos);
+        uint16_t len = MIN(READ_BLOCK_SIZE, dbuf->length - pos);
         if (mpm_read_memory(mpm, comp, len, memtype, pos))
         {
             mboot->progress_cb(progress_msg, -1, -1);
@@ -825,6 +826,7 @@ static int mpm_verify(struct multiboot *mboot,
 
 struct multiboot_ops mpm_ops =
 {
+    .exec_name      = "mpmboot",
     .alloc          = mpm_alloc,
     .free           = mpm_free,
     .get_memtype    = mpm_get_memtype,

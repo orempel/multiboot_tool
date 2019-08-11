@@ -33,16 +33,12 @@
 #define ACTION_READ     0x01
 #define ACTION_WRITE    0x02
 
-struct prog_mode {
-    char *progname;
-    struct multiboot_ops *ops;
-};
-
-static struct prog_mode prog_modes[] =
+static struct multiboot_ops * prog_ops[] =
 {
-    { "twiboot", &twi_ops },
-    { "mpmboot", &mpm_ops },
-    { "funkboot", &funk_ops },
+    &twi_ops,
+    &mpm_ops,
+    &funk_ops,
+    &eprog_ops,
 };
 
 struct mboot_action
@@ -71,6 +67,11 @@ static struct option main_optargs[] =
  * ************************************************************************* */
 static void progress_mode0_cb(const char *msg, int pos, int size)
 {
+    /* unused parameter */
+    (void)msg;
+    (void)pos;
+    (void)size;
+
     /* no progress output */
 } /* progress_mode0_cb */
 
@@ -82,15 +83,16 @@ static void progress_mode1_cb(const char *msg, int pos, int size)
 {
     if (pos != -1 && size != -1)
     {
-        char stars[50];
+        char stars[51];
         int i;
-        int count = (pos * sizeof(stars) / size);
+        int count = (pos * 50 / size);
 
-        for (i = 0; i < sizeof(stars); i++)
+        for (i = 0; i < 50; i++)
         {
             stars[i] = (i < count) ? '*' : ' ';
         }
 
+        stars[50] = '\0';
         printf("%-15s: [%s] (%d)\r", msg, stars, pos);
     }
 
@@ -211,14 +213,18 @@ static int main_optarg_cb(int val, const char *arg, void *privdata)
     switch (val)
     {
         case 'r': /* read */
-            if (add_action(mboot, ACTION_READ, arg) < 0)
+            if ((mboot->ops->read == NULL) ||
+                (add_action(mboot, ACTION_READ, arg) < 0)
+               )
             {
                 return -1;
             }
             break;
 
         case 'w': /* write */
-            if (add_action(mboot, ACTION_WRITE, arg) < 0)
+            if ((mboot->ops->write == NULL) ||
+                (add_action(mboot, ACTION_WRITE, arg) < 0)
+               )
             {
                 return -1;
             }
@@ -263,17 +269,19 @@ int main(int argc, char *argv[])
     char *progname = strrchr(argv[0], '/');
     progname = (progname != NULL) ? (progname +1) : argv[0];
 
-    int i;
-    for (i = 0; i < ARRAY_SIZE(prog_modes); i++)
+    unsigned int i;
+    for (i = 0; i < ARRAY_SIZE(prog_ops); i++)
     {
-        struct prog_mode *mode = &prog_modes[i];
+        struct multiboot_ops * ops = prog_ops[i];
 
-        if (strcmp(progname, mode->progname) == 0)
+        if (strcmp(progname, ops->exec_name) == 0)
         {
-            mboot = mode->ops->alloc();
+            mboot = ops->alloc();
             if (mboot == NULL)
             {
-                fprintf(stderr, "failed to allocate '%s'\n", progname);
+                fprintf(stderr, "failed to allocate '%s'\n",
+                        progname);
+
                 return -1;
             }
         }
@@ -381,7 +389,9 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            if (mboot->verify)
+            if (mboot->verify &&
+                (mboot->ops->verify != NULL)
+               )
             {
                 result = mboot->ops->verify(mboot, dbuf, action->memtype);
                 if (result != 0)

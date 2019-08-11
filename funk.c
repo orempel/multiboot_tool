@@ -260,6 +260,9 @@ static void funk_free(struct multiboot *mboot)
 static int funk_get_memtype(struct multiboot *mboot,
                             const char *memname)
 {
+    /* unused parameter */
+    (void)mboot;
+
     if (strcmp(memname, "flash") == 0)
     {
         return MEMTYPE_FLASH;
@@ -1066,14 +1069,14 @@ static int funk_read(struct multiboot *mboot,
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "reading flash" : "reading eeprom";
 
-    int pos = 0;
-    int size = (memtype == MEMTYPE_FLASH) ? funk->flashsize : funk->eepromsize;
+    uint16_t pos = 0;
+    uint16_t size = (memtype == MEMTYPE_FLASH) ? funk->flashsize : funk->eepromsize;
 
     while (pos < size)
     {
         mboot->progress_cb(progress_msg, pos, size);
 
-        int len = MIN(READ_BLOCK_SIZE, size - pos);
+        uint16_t len = MIN(READ_BLOCK_SIZE, size - pos);
         if (funk_read_memory(funk, dbuf->data + pos, len, memtype, pos))
         {
             mboot->progress_cb(progress_msg, -1, -1);
@@ -1100,12 +1103,12 @@ static int funk_write(struct multiboot *mboot,
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "writing flash" : "writing eeprom";
 
-    int pos = 0;
+    uint16_t pos = 0;
     while (pos < dbuf->length)
     {
         mboot->progress_cb(progress_msg, pos, dbuf->length);
 
-        int len = (memtype == MEMTYPE_FLASH) ? funk->flashpage : WRITE_BLOCK_SIZE;
+        uint16_t len = (memtype == MEMTYPE_FLASH) ? funk->flashpage : WRITE_BLOCK_SIZE;
 
         len = MIN(len, dbuf->length - pos);
 
@@ -1133,14 +1136,14 @@ static int funk_verify(struct multiboot *mboot,
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
     char *progress_msg = (memtype == MEMTYPE_FLASH) ? "verifing flash" : "verifing eeprom";
 
-    int pos = 0;
+    uint16_t pos = 0;
     uint8_t comp[READ_BLOCK_SIZE];
 
     while (pos < dbuf->length)
     {
         mboot->progress_cb(progress_msg, pos, dbuf->length);
 
-        int len = MIN(READ_BLOCK_SIZE, dbuf->length - pos);
+        uint16_t len = MIN(READ_BLOCK_SIZE, dbuf->length - pos);
         if (funk_read_memory(funk, comp, len, memtype, pos))
         {
             mboot->progress_cb(progress_msg, -1, -1);
@@ -1166,6 +1169,7 @@ static int funk_verify(struct multiboot *mboot,
 
 struct multiboot_ops funk_ops =
 {
+    .exec_name      = "funkboot",
     .alloc          = funk_alloc,
     .free           = funk_free,
     .get_memtype    = funk_get_memtype,
