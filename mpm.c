@@ -682,13 +682,15 @@ static int mpm_open(struct multiboot *mboot)
     /* wait for watchdog and startup time */
     usleep(100000);
 
-    char version[16];
-    if (mpm_read_version(mpm, (uint8_t *)version, sizeof(version)))
+    char version[16 +1];
+    if (mpm_read_version(mpm, (uint8_t *)version, sizeof(version) -1))
     {
         fprintf(stderr, "failed to get bootloader version\n");
         mpm_close(mboot);
         return -1;
     }
+
+    version[16] = '\0';
 
     uint8_t chipinfo[8];
     if (mpm_read_chipinfo(mpm, chipinfo, sizeof(chipinfo)))

@@ -310,8 +310,8 @@ static int twi_open(struct multiboot *mboot)
     /* wait for watchdog and startup time */
     usleep(100000);
 
-    char version[16];
-    if (twi_read_version(twi, version, sizeof(version)))
+    char version[16 +1];
+    if (twi_read_version(twi, version, sizeof(version) -1))
     {
         fprintf(stderr, "failed to get bootloader version: %s\n",
                 strerror(errno));
@@ -319,6 +319,8 @@ static int twi_open(struct multiboot *mboot)
         twi_close(mboot);
         return -1;
     }
+
+    version[16] = '\0';
 
     uint8_t chipinfo[8];
     if (twi_read_memory(twi, chipinfo, sizeof(chipinfo), MEMTYPE_CHIPINFO, 0x0000))
