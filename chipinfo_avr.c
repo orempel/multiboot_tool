@@ -27,35 +27,47 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
 
-struct chipinfo
+static avr_chipinfo_t chips[] =
 {
-    uint8_t sig[3];
-    const char name[16];
+    { { 0x1E, 0x93, 0x07 }, "ATmega8",      0x2000, 0x200 },
+    { { 0x1E, 0x93, 0x0A }, "ATmega88",     0x2000, 0x200 },
+    { { 0x1E, 0x94, 0x06 }, "ATmega168",    0x4000, 0x200 },
+    { { 0x1E, 0x95, 0x02 }, "ATmega32",     0x8000, 0x400 },
+    { { 0x1E, 0x95, 0x0F }, "ATmega328p",   0x8000, 0x400 },
 };
 
-static struct chipinfo chips[] =
+/* *************************************************************************
+ * chipinfo_get_by_signature
+ * ************************************************************************* */
+const avr_chipinfo_t * chipinfo_get_by_signature(const uint8_t *sig)
 {
-    { { 0x1E, 0x93, 0x07 }, "AVR Mega 8" },
-    { { 0x1E, 0x93, 0x0A }, "AVR Mega 88" },
-    { { 0x1E, 0x94, 0x06 }, "AVR Mega 168" },
-    { { 0x1E, 0x95, 0x02 }, "AVR Mega 32" },
-};
+    unsigned int i;
+
+    for (i = 0; i < ARRAY_SIZE(chips); i++)
+    {
+        avr_chipinfo_t *chip = &chips[i];
+
+        if ((chip->sig[0] == sig[0]) &&
+            (chip->sig[1] == sig[1]) &&
+            (chip->sig[2] == sig[2])
+           )
+        {
+            return chip;
+        }
+    }
+
+    return NULL;
+} /* chipinfo_get_by_signature */
+
 
 /* *************************************************************************
  * chipinfo_get_avr_name
  * ************************************************************************* */
 const char * chipinfo_get_avr_name(const uint8_t *sig)
 {
-    unsigned int i;
+    const avr_chipinfo_t * p_chipinfo;
 
-    for (i = 0; i < ARRAY_SIZE(chips); i++)
-    {
-        struct chipinfo *chip = &chips[i];
-        if (chip->sig[0] == sig[0] && chip->sig[1] == sig[1] && chip->sig[2] == sig[2])
-        {
-            return chip->name;
-        }
-    }
+    p_chipinfo = chipinfo_get_by_signature(sig);
 
-    return "unknown";
+    return (p_chipinfo != NULL) ? p_chipinfo->name : "unknown";
 } /* chipinfo_get_avr_name */

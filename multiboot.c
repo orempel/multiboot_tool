@@ -39,6 +39,7 @@ static struct multiboot_ops * prog_ops[] =
     &mpm_ops,
     &funk_ops,
     &eprog_ops,
+    &butterfly_ops,
 };
 
 struct mboot_action

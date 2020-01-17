@@ -1,4 +1,4 @@
-TARGETS=twiboot mpmboot funkboot eprom_prog
+TARGETS=twiboot mpmboot funkboot eprom_prog butterfly_prog
 TARGET_DIR=~/bin
 BUILD_DIR = build
 
