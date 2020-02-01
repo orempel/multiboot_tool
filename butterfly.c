@@ -106,7 +106,7 @@ static int bfly_optarg_cb(int val, const char *arg, void *privdata)
             }
             break;
 
-        case 'e': /* no verify after write */
+        case 'e': /* chip erase */
             p_priv->chip_erase = 1;
             break;
 
@@ -115,6 +115,7 @@ static int bfly_optarg_cb(int val, const char *arg, void *privdata)
             fprintf(stderr, "Usage: butterfly_prog [options]\n"
             "  -a <address>                 - optional: twi address for twiboot bridge mode\n"
             "  -d <device>                  - selects butterfly serial device\n"
+            "  -e                           - executes a chip erase\n"
             "  -r <flash|eeprom>:<file>     - reads flash/eeprom to file   (.bin | .hex | -)\n"
             "  -w <flash|eeprom>:<file>     - write flash/eeprom from file (.bin | .hex)\n"
             "  -n                           - disable verify after write\n"
