@@ -82,7 +82,7 @@ static void progress_mode0_cb(const char *msg, int pos, int size)
  * ************************************************************************* */
 static void progress_mode1_cb(const char *msg, int pos, int size)
 {
-    if (pos != -1 && size != -1)
+    if (pos != -1 && size > 0)
     {
         char stars[51];
         int i;
@@ -111,7 +111,7 @@ static void progress_mode2_cb(const char *msg, int pos, int size)
 {
     static int old_count;
 
-    if (pos != -1 && size != -1)
+    if (pos != -1 && size > 0)
     {
         if (pos == 0)
         {
