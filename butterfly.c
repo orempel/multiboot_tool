@@ -39,6 +39,8 @@
 #define SERIAL_BAUDRATE         B115200
 #define SERIAL_TIMEOUT          1000
 
+#define WRITE_SIZE_EEPROM       16
+
 struct multiboot_ops butterfly_ops;
 
 typedef struct bfly_privdata_s
@@ -689,7 +691,10 @@ static int butterfly_write(struct multiboot * p_mboot,
     {
         p_mboot->progress_cb(p_progress_msg, pos, p_dbuf->length);
 
-        uint16_t len = MIN(p_priv->buffersize, p_dbuf->length - pos);
+        uint16_t len = (memtype == 'F') ? p_priv->buffersize : WRITE_SIZE_EEPROM;
+
+        len = MIN(len, p_dbuf->length - pos);
+
         if (butterfly_write_data(p_priv, p_dbuf->data + pos, len, memtype))
         {
             p_mboot->progress_cb(p_progress_msg, -1, -1);
