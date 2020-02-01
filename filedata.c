@@ -457,6 +457,12 @@ static int hexfile_write(const char *filename, struct databuf *dbuf)
         }
     }
 
+    if (addr_min >= addr_max)
+    {
+        addr_min = 0;
+        addr_max = dbuf->length;
+    }
+
     addr_min = addr_min & ~0x0F;
     addr_max = (addr_max + 0x0F) & ~0x0F;
 
