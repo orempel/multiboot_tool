@@ -255,7 +255,7 @@ static void funk_free(struct multiboot *mboot)
 
 
 /* *************************************************************************
- * optarg_copy
+ * funk_get_memtype
  * ************************************************************************* */
 static int funk_get_memtype(struct multiboot *mboot,
                             const char *memname)
@@ -277,7 +277,7 @@ static int funk_get_memtype(struct multiboot *mboot,
 
 
 /* *************************************************************************
- * optarg_copy
+ * funk_get_memsize
  * ************************************************************************* */
 static int funk_get_memsize(struct multiboot *mboot,
                             int memtype)
@@ -761,7 +761,7 @@ static int funk_read_version(struct funk_privdata *funk,
     }
 
     int i;
-    for (i = 0; i < packet.data_length -3; i++)
+    for (i = 0; i < MIN(length, packet.data_length -3); i++)
     {
         version[i] = packet.msg.p.version.data[i] & 0x7F;
     }
