@@ -21,7 +21,7 @@ struct multiboot_ops
     void (* free)(struct multiboot *mboot);
 
     int (* get_memtype)(struct multiboot *mboot, const char *memname);
-    int (* get_memsize)(struct multiboot *mboot, int memtype);
+    uint32_t (* get_memsize)(struct multiboot *mboot, int memtype);
 
     int (* open)(struct multiboot *mboot);
     int (* close)(struct multiboot *mboot);

@@ -279,8 +279,8 @@ static int funk_get_memtype(struct multiboot *mboot,
 /* *************************************************************************
  * funk_get_memsize
  * ************************************************************************* */
-static int funk_get_memsize(struct multiboot *mboot,
-                            int memtype)
+static uint32_t funk_get_memsize(struct multiboot *mboot,
+                                 int memtype)
 {
     struct funk_privdata *funk = (struct funk_privdata *)mboot->privdata;
 

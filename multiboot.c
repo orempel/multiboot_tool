@@ -374,8 +374,8 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            int memsize = mboot->ops->get_memsize(mboot, action->memtype);
-            if (memsize == 0)
+            uint32_t memsize = mboot->ops->get_memsize(mboot, action->memtype);
+            if ((memsize == 0) || (memsize < dbuf->length))
             {
                 fprintf(stderr, "invalid memsize: 0x%04x > 0x%04x\n", dbuf->length, memsize);
                 dbuf_free(dbuf);

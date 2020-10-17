@@ -197,7 +197,7 @@ static int mpm_get_memtype(struct multiboot *mboot,
 /* *************************************************************************
  * mpm_get_memsize
  * ************************************************************************* */
-static int mpm_get_memsize(struct multiboot *mboot, int memtype)
+static uint32_t mpm_get_memsize(struct multiboot *mboot, int memtype)
 {
     struct mpm_privdata *mpm = (struct mpm_privdata *)mboot->privdata;
 

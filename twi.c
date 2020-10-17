@@ -592,8 +592,8 @@ static int twi_get_memtype(struct multiboot *mboot,
 /* *************************************************************************
  * twi_get_memsize
  * ************************************************************************* */
-static int twi_get_memsize(struct multiboot *mboot,
-                           int memtype)
+static uint32_t twi_get_memsize(struct multiboot *mboot,
+                                int memtype)
 {
     struct twi_privdata *twi = (struct twi_privdata *)mboot->privdata;
 

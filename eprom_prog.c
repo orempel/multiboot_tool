@@ -267,8 +267,8 @@ static int eprog_get_memtype(struct multiboot *mboot,
 /* *************************************************************************
  * eprog_get_memsize
  * ************************************************************************* */
-static int eprog_get_memsize(struct multiboot *mboot,
-                             int memtype)
+static uint32_t eprog_get_memsize(struct multiboot *mboot,
+                                  int memtype)
 {
     struct eprog_privdata *p_prog = (struct eprog_privdata *)mboot->privdata;
 

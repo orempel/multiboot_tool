@@ -209,8 +209,8 @@ static int butterfly_get_memtype(struct multiboot * p_mboot,
 /* *************************************************************************
  * butterfly_get_memsize
  * ************************************************************************* */
-static int butterfly_get_memsize(struct multiboot * p_mboot,
-                                 int memtype)
+static uint32_t butterfly_get_memsize(struct multiboot * p_mboot,
+                                      int memtype)
 {
     bfly_privdata_t * p_priv = (bfly_privdata_t *)p_mboot->privdata;
 
