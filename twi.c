@@ -44,6 +44,8 @@
 
 #define READ_BLOCK_SIZE         128     /* bytes in one flash/eeprom read request */
 #define WRITE_BLOCK_SIZE        16      /* bytes in one eeprom write request */
+#define WRITE_RETRY_COUNT       50      /* write retries when slave does not not acknowledge */
+#define WRITE_RETRY_DELAY_US    2000    /* delay in us per retry */
 
 /* SLA+R */
 #define CMD_WAIT                0x00
@@ -86,6 +88,43 @@ static struct option twi_optargs[] =
 
 
 /* *************************************************************************
+ * twi_write_retries
+ * ************************************************************************* */
+static int twi_write_retries(int fd, const void *buf, size_t count)
+{
+    int result;
+    int retries = WRITE_RETRY_COUNT;
+    do {
+        result = write(fd, buf, count);
+        if (result >= 0)
+        {
+            break;
+        }
+        else
+        {
+            /*
+             * slave device does not acknowledge (eg. not able to clockstretch)
+             * actual error code may be driver specific
+             */
+            if ((errno == ENXIO) || (errno == EREMOTEIO) || (errno == EIO))
+            {
+                usleep(WRITE_RETRY_DELAY_US);
+            }
+            else
+            {
+                fprintf(stderr, "twi_write_retries(): %s\n",
+                        strerror(errno));
+
+                retries = 0;
+            }
+        }
+    } while (retries--);
+
+    return result;
+} /* twi_write_retries */
+
+
+/* *************************************************************************
  * twi_switch_application
  * ************************************************************************* */
 static int twi_switch_application(struct twi_privdata *twi,
@@ -93,7 +132,7 @@ static int twi_switch_application(struct twi_privdata *twi,
 {
     uint8_t cmd[] = { CMD_SWITCH_APPLICATION, application };
 
-    return (write(twi->fd, cmd, sizeof(cmd)) != sizeof(cmd));
+    return (twi_write_retries(twi->fd, cmd, sizeof(cmd)) != sizeof(cmd));
 } /* twi_switch_application */
 
 
@@ -105,7 +144,7 @@ static int twi_read_version(struct twi_privdata *twi,
 {
     uint8_t cmd[] = { CMD_READ_VERSION };
 
-    if (write(twi->fd, cmd, sizeof(cmd)) != sizeof(cmd))
+    if (twi_write_retries(twi->fd, cmd, sizeof(cmd)) != sizeof(cmd))
     {
         return -1;
     }
@@ -135,7 +174,7 @@ static int twi_read_memory(struct twi_privdata *twi,
 {
     uint8_t cmd[] = { CMD_READ_MEMORY, memtype, (address >> 8) & 0xFF, (address & 0xFF) };
 
-    if (write(twi->fd, cmd, sizeof(cmd)) != sizeof(cmd))
+    if (twi_write_retries(twi->fd, cmd, sizeof(cmd)) != sizeof(cmd))
     {
         return -1;
     }
@@ -187,7 +226,7 @@ static int twi_write_memory(struct twi_privdata *twi,
         memset(cmd +4 +size, 0xFF, twi->pagesize - size);
     }
 
-    int result = write(twi->fd, cmd, bufsize);
+    int result = twi_write_retries(twi->fd, cmd, bufsize);
     free(cmd);
 
     return (result != bufsize);
