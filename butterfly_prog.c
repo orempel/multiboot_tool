@@ -238,9 +238,6 @@ static uint32_t butterfly_get_memsize(struct multiboot * p_mboot,
  * ************************************************************************* */
 static void butterfly_close_device(bfly_privdata_t * p_priv)
 {
-    /* delay close() / tcsetattr() */
-    usleep(100000);
-
     tcsetattr(p_priv->fd, TCSANOW, &p_priv->oldtio);
     close(p_priv->fd);
 } /* butterfly_close_device */
@@ -268,9 +265,10 @@ static int butterfly_open_device(bfly_privdata_t * p_priv)
     struct termios newtio;
     memset(&newtio, 0, sizeof(newtio));
 
-    newtio.c_iflag |= IGNBRK;
-    newtio.c_cflag |= SERIAL_BAUDRATE | CS8 | CLOCAL | CREAD;
-
+    newtio.c_iflag = IGNBRK;
+    newtio.c_cflag = (CS8 | CREAD | CLOCAL);
+    cfsetispeed(&newtio, SERIAL_BAUDRATE);
+    cfsetospeed(&newtio, SERIAL_BAUDRATE);
     newtio.c_cc[VMIN] = 1;
     newtio.c_cc[VTIME] = 0;
 
@@ -281,6 +279,9 @@ static int butterfly_open_device(bfly_privdata_t * p_priv)
         close(p_priv->fd);
         return -1;
     }
+
+    /* needed for some slow USB2Serial adapters */
+    usleep(200000);
 
     return 0;
 } /* butterlfy_open_device */
