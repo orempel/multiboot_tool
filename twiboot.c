@@ -545,7 +545,7 @@ static int twi_optarg_cb(int val, const char *arg, void *privdata)
                     "  -n                           - disable verify after write\n"
                     "  -p <0|1|2>                   - progress bar mode\n"
                     "\n"
-                    "Example: twiboot -a 0x22 -w flash:blmc.hex -w flash:blmc_eeprom.hex\n"
+                    "Example: twiboot -a 0x22 -w flash:blmc.hex -w eeprom:blmc_eeprom.hex\n"
                     "\n");
                 return -1;
 
