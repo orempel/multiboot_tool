@@ -51,6 +51,7 @@ typedef struct bfly_privdata_s
 
     uint8_t         twi_address;
     uint8_t         chip_erase;
+    uint8_t         stay_in_bootloader;
 
     uint16_t        buffersize;
     uint16_t        flashsize;
@@ -64,6 +65,7 @@ static struct option bfly_optargs[] =
     { "address",    1, 0, 'a' },    /* [ -a <address ]      */
     { "device",     1, 0, 'd' },    /* -d <device>          */
     { "erase",      0, 0, 'e' },    /* [ -e ]               */
+    { "stay",       0, 0, 's' },    /* [ -s ]               */
 };
 
 /* *************************************************************************
@@ -112,12 +114,17 @@ static int bfly_optarg_cb(int val, const char *arg, void *privdata)
             p_priv->chip_erase = 1;
             break;
 
+        case 's': /* stay in bootloader */
+            p_priv->stay_in_bootloader = 1;
+            break;
+
         case 'h':
         case '?': /* error */
             fprintf(stderr, "Usage: butterfly_prog [options]\n"
             "  -a <address>                 - optional: twi address for twiboot bridge mode\n"
             "  -d <device>                  - selects butterfly serial device\n"
             "  -e                           - executes a chip erase\n"
+            "  -s                           - stay in bootloader afterwards\n"
             "  -r <flash|eeprom>:<file>     - reads flash/eeprom to file   (.bin | .hex | -)\n"
             "  -w <flash|eeprom>:<file>     - write flash/eeprom from file (.bin | .hex)\n"
             "  -n                           - disable verify after write\n"
@@ -389,7 +396,16 @@ static int butterfly_enter_progmode(bfly_privdata_t * p_priv)
  * ************************************************************************* */
 static int butterfly_leave_progmode(bfly_privdata_t * p_priv)
 {
-    (void)write(p_priv->fd, "L", 1);
+    if (p_priv->stay_in_bootloader)
+    {
+        /* Leave programming mode */
+        (void)write(p_priv->fd, "L", 1);
+    }
+    else
+    {
+        /* Exit Bootloader */
+        (void)write(p_priv->fd, "E", 1);
+    }
 
     return butterfly_expect_cr(p_priv);
 } /* butterfly_leave_progmode */

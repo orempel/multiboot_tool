@@ -74,6 +74,7 @@ struct twi_privdata
     uint8_t     address;
     int         fd;
     int         connected;
+    int         stay_in_bootloader;
 
     uint8_t     pagesize;
     uint16_t    flashsize;
@@ -82,8 +83,9 @@ struct twi_privdata
 
 static struct option twi_optargs[] =
 {
-    { "address",    1, 0, 'a'}, /* -a <addr>       */
-    { "device",     1, 0, 'd'}, /* [ -d <device> ] */
+    { "address",    1, 0, 'a' }, /* -a <addr>       */
+    { "device",     1, 0, 'd' }, /* [ -d <device> ] */
+    { "stay",       0, 0, 's' }, /* [ -s ]          */
 };
 
 
@@ -299,7 +301,7 @@ static int twi_close(struct multiboot *mboot)
 {
     struct twi_privdata *twi = (struct twi_privdata *)mboot->privdata;
 
-    if (twi->connected)
+    if (twi->connected && !twi->stay_in_bootloader)
     {
         twi_switch_application(twi, BOOTTYPE_APPLICATION);
     }
@@ -535,11 +537,16 @@ static int twi_optarg_cb(int val, const char *arg, void *privdata)
             }
             break;
 
+        case 's': /* stay in bootloader */
+            twi->stay_in_bootloader = 1;
+            break;
+
         case 'h':
         case '?': /* error */
                 fprintf(stderr, "Usage: twiboot [options]\n"
                     "  -a <address>                 - selects i2c address (0x01 - 0x7F)\n"
                     "  -d <device>                  - selects i2c device  (default: /dev/i2c-0)\n"
+                    "  -s                           - stay in bootloader afterwards\n"
                     "  -r <flash|eeprom>:<file>     - reads flash/eeprom to file   (.bin | .hex | -)\n"
                     "  -w <flash|eeprom>:<file>     - write flash/eeprom from file (.bin | .hex)\n"
                     "  -n                           - disable verify after write\n"
